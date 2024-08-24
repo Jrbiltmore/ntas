@@ -26,7 +26,7 @@ The **NTAS Alert Image Updater** is a GitHub repository designed to dynamically 
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/jrbiltmore/ntas.git
+   git clone https://github.com/username/repo-name.git
    cd repo-name
 Set Up GitHub Secrets:
 
@@ -44,23 +44,17 @@ Install Python Dependencies:
 
 Create a requirements.txt file if it does not exist:
 plaintext
-Always show details
-
 Copy code
 requests
 pillow
 Install the dependencies:
 bash
-Always show details
-
 Copy code
 pip install -r requirements.txt
 Run the Script Locally (Optional):
 
 You can test the script locally by setting the environment variables and running the script:
 bash
-Always show details
-
 Copy code
 export XML_FEED_URL="http://www.dhs.gov/ntas/1.1/feed.xml"
 export IMAGE_PATH="images/ntas_current_status.png"
@@ -72,10 +66,8 @@ Embed Example
 Use the following Markdown to embed the image:
 
 markdown
-Always show details
-
 Copy code
-[![National Terrorism Advisory System](https://jrbiltmore.github.io/ntas/images/ntas_current_status.png)](https://www.dhs.gov/ntas/)
+[![National Terrorism Advisory System](https://username.github.io/repo-name/images/ntas_current_status.png)](https://www.dhs.gov/ntas/)
 Replace username and repo-name with your GitHub username and repository name.
 
 Contributing
@@ -93,4 +85,4 @@ This repository is licensed under the MIT License. See the LICENSE file for more
 Acknowledgments
 Department of Homeland Security for providing the NTAS alert data.
 GitHub Actions for enabling automated workflows.
-If you have any questions or need further assistance, feel free to open an issue or contact me directly
+If you have any questions or need further assistance, feel free to open an issue or contact me directly.
