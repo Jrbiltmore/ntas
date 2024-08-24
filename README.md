@@ -26,7 +26,7 @@ The **NTAS Alert Image Updater** is a GitHub repository designed to dynamically 
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/username/repo-name.git
+   git clone https://github.com/jrbiltmore/ntas.git
    cd repo-name
 Set Up GitHub Secrets:
 
