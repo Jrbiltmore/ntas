@@ -3,29 +3,88 @@ name: Update NTAS Image
 on:
   schedule:
     - cron: '0 * * * *'  # Runs every hour
-  workflow_dispatch:  # Allows manual triggering
+  workflow_dispatch:  # Allows for manual triggering via GitHub interface
 
 jobs:
   update-image:
     runs-on: ubuntu-latest
+    env:
+      PYTHON_VERSION: '3.9'
+      COMMIT_EMAIL: ${{ secrets.GIT_COMMIT_EMAIL }}  # Use GitHub secrets for sensitive data
+      COMMIT_NAME: ${{ secrets.GIT_COMMIT_NAME }}    # Use GitHub secrets for sensitive data
+      IMAGE_PATH: 'images/ntas_current_status.png'
+      XML_FEED_URL: 'http://www.dhs.gov/ntas/1.1/feed.xml'
+      SCRIPT_PATH: 'scripts/update_ntas_image.py'
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.x'
+          python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install dependencies
-        run: pip install requests pillow
+      - name: Cache Python dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+        continue-on-error: false
+        if: steps.cache.outputs.cache-hit != 'true'  # Skip if cache hit
+
+      - name: Validate XML Feed URL
+        id: validate-feed
+        run: |
+          curl -o /dev/null -s -w "%{http_code}" ${{ env.XML_FEED_URL }} | grep -q "200"
+        continue-on-error: false
+        if: ${{ env.XML_FEED_URL }} != ''
+        # Check if the feed URL is reachable, fail the job otherwise
 
       - name: Fetch and update NTAS image
+        id: fetch-and-update
         run: |
-          python update_ntas_image.py
-          git config --global user.email "your-email@example.com"
-          git config --global user.name "Your Name"
-          git add ntas_current_status.png
-          git commit -m "Update NTAS image"
+          python ${{ env.SCRIPT_PATH }}
+        env:
+          XML_FEED_URL: ${{ env.XML_FEED_URL }}
+          IMAGE_PATH: ${{ env.IMAGE_PATH }}
+        continue-on-error: false
+
+      - name: Check if image was updated
+        id: check-image-updated
+        run: |
+          if git diff --name-only | grep -q "${{ env.IMAGE_PATH }}"; then echo "image-updated=true" >> $GITHUB_ENV; fi
+        continue-on-error: false
+
+      - name: Commit and push changes
+        if: env.image-updated == 'true'
+        run: |
+          git config --global user.email "${{ env.COMMIT_EMAIL }}"
+          git config --global user.name "${{ env.COMMIT_NAME }}"
+          git add ${{ env.IMAGE_PATH }}
+          git commit -m "Update NTAS image on $(date -u '+%Y-%m-%d %H:%M:%S')"
           git push
+        continue-on-error: false
+
+      - name: Clean up and reset on failure
+        if: failure()
+        run: |
+          git reset --hard
+          git clean -fd
+        # Reset repo to a clean state on failure to avoid any leftover changes
+
+      - name: Send Slack notification on failure
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,ref,action,eventName,workflow,job,took
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
